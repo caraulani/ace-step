@@ -34,8 +34,8 @@ RUN pip install --no-cache-dir -r requirements-runpod.txt && \
 # Copy the application code
 COPY . /
 
-# Install the ACE-Step package
-RUN pip install --no-cache-dir -e .
+# Install the ACE-Step package with timeout protection
+RUN pip install --no-cache-dir --timeout 300 -e . || (echo "ACE-Step install failed, trying minimal install" && pip install --no-cache-dir --no-deps -e .)
 
 # Create checkpoint directory
 RUN mkdir -p /runpod-volume/checkpoints
