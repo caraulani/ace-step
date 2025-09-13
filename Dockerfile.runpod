@@ -1,0 +1,36 @@
+FROM runpod/pytorch:2.2.1-py3.11-cuda12.1.1-devel-ubuntu22.04
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    HF_HUB_ENABLE_HF_TRANSFER=1 \
+    DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    git \
+    curl \
+    wget \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /
+
+# Copy requirements and install Python dependencies
+COPY requirements-runpod.txt /requirements-runpod.txt
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements-runpod.txt
+
+# Copy the application code
+COPY . /
+
+# Install the ACE-Step package
+RUN pip install --no-cache-dir -e .
+
+# Create checkpoint directory
+RUN mkdir -p /runpod-volume/checkpoints
+
+# Set the handler
+CMD python -u runpod_handler.py
