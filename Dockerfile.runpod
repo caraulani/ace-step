@@ -1,5 +1,5 @@
-# Multi-stage build for better optimization
-FROM nvidia/cuda:12.1.1-devel-ubuntu22.04 as base
+# Multi-stage build for better optimization  
+FROM nvidia/cuda:12.1.1-devel-ubuntu22.04 AS base
 
 # Set environment variables for optimal builds
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -56,14 +56,7 @@ RUN pip install --no-cache-dir --no-deps -e . && \
 RUN mkdir -p /runpod-volume/checkpoints /runpod-volume/hf_cache /tmp
 
 # Pre-download models to avoid runtime delays
-RUN python -c "
-import os
-os.environ['HF_HUB_CACHE'] = '/runpod-volume/hf_cache'
-print('Pre-downloading ACE-Step models...')
-from acestep.pipeline_ace_step import ACEStepPipeline
-pipeline = ACEStepPipeline(checkpoint_dir='/runpod-volume/checkpoints', device_id=0)
-print('Models downloaded successfully!')
-" || echo "Model pre-download failed but continuing..."
+RUN python -c "import os; os.environ['HF_HUB_CACHE'] = '/runpod-volume/hf_cache'; print('Pre-downloading ACE-Step models...'); from acestep.pipeline_ace_step import ACEStepPipeline; pipeline = ACEStepPipeline(checkpoint_dir='/runpod-volume/checkpoints', device_id=0); print('Models downloaded successfully!')" || echo "Model pre-download failed but continuing..."
 
 # Set the handler
 CMD python -u runpod_handler.py
