@@ -55,8 +55,8 @@ RUN pip install --no-cache-dir --no-deps -e . && \
 # Create necessary directories
 RUN mkdir -p /runpod-volume/checkpoints /runpod-volume/hf_cache /tmp
 
-# Pre-download models to avoid runtime delays
-RUN python -c "import os; os.environ['HF_HUB_CACHE'] = '/runpod-volume/hf_cache'; print('Pre-downloading ACE-Step models...'); from acestep.pipeline_ace_step import ACEStepPipeline; pipeline = ACEStepPipeline(checkpoint_dir='/runpod-volume/checkpoints', device_id=0); print('Models downloaded successfully!')" || echo "Model pre-download failed but continuing..."
+# Models will be downloaded automatically on first use
+# This avoids build timeouts while still caching models for subsequent runs
 
 # Set the handler
 CMD python -u runpod_handler.py
