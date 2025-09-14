@@ -1,62 +1,54 @@
-# Multi-stage build for better optimization  
-FROM nvidia/cuda:12.1.1-devel-ubuntu22.04 AS base
+# Based on official ACE-Step Dockerfile but optimized for RunPod serverless
+FROM nvidia/cuda:12.6.0-runtime-ubuntu22.04 AS base
 
-# Set environment variables for optimal builds
+# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     HF_HUB_ENABLE_HF_TRANSFER=1 \
     HF_HUB_CACHE=/runpod-volume/hf_cache \
-    DEBIAN_FRONTEND=noninteractive \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    DEBIAN_FRONTEND=noninteractive
 
-# Install system dependencies in single layer
+# Install Python and system dependencies (following official Dockerfile)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 \
+    python3.10 \
     python3-pip \
+    python3-venv \
     python3-dev \
     build-essential \
     git \
     curl \
     wget \
-    ca-certificates \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && ln -s /usr/bin/python3 /usr/bin/python
 
+# Create and activate virtual environment (following official approach)
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
 # Set working directory
-WORKDIR /
+WORKDIR /app
 
-# Upgrade pip with network optimizations
-RUN pip install --no-cache-dir --timeout 600 --retries 3 \
-    --trusted-host pypi.org --trusted-host pypi.python.org \
-    --upgrade pip setuptools wheel
+# Clone the repository directly (like official Dockerfile - avoids COPY issues)
+RUN git clone https://github.com/caraulani/ace-step.git .
 
-# Install PyTorch with CUDA support first (largest dependency)
-RUN pip install --no-cache-dir --timeout 900 --retries 3 \
-    torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+# Install dependencies following official pattern but with RunPod optimizations
+RUN pip3 install --no-cache-dir --timeout 600 --retries 3 --upgrade pip && \
+    pip3 install --no-cache-dir --timeout 300 --retries 3 hf_transfer peft && \
+    pip3 install --no-cache-dir --timeout 900 --retries 3 -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu126
 
-# Copy and install requirements with optimizations
-COPY requirements-runpod.txt /requirements-runpod.txt
-RUN pip install --no-cache-dir --timeout 600 --retries 3 \
-    --trusted-host pypi.org --trusted-host pypi.python.org \
-    -r requirements-runpod.txt
+# Install ACE-Step package
+RUN pip3 install --no-cache-dir --timeout 600 --retries 3 .
 
 # Install RunPod SDK
-RUN pip install --no-cache-dir --timeout 300 --retries 3 runpod
+RUN pip3 install --no-cache-dir --timeout 300 --retries 3 runpod
 
-# Copy the application code
-COPY . /
-
-# Install ACE-Step package without dependencies first, then let it install what it needs
-RUN pip install --no-cache-dir --no-deps -e . && \
-    pip install --no-cache-dir --timeout 900 --retries 3 -e .
-
-# Create necessary directories
+# Create necessary directories for RunPod
 RUN mkdir -p /runpod-volume/checkpoints /runpod-volume/hf_cache /tmp
 
-# Models will be downloaded automatically on first use
-# This avoids build timeouts while still caching models for subsequent runs
+# Copy our custom RunPod handler
+COPY runpod_handler.py /app/runpod_handler.py
 
+# Models will be downloaded automatically on first use
 # Set the handler
 CMD python -u runpod_handler.py
