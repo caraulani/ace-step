@@ -32,12 +32,17 @@ WORKDIR /app
 # Clone the repository directly (like official Dockerfile - avoids COPY issues)
 RUN git clone https://github.com/caraulani/ace-step.git .
 
-# Install dependencies with matching CUDA versions
+# Install dependencies with matching CUDA versions (PyTorch first, then others)
 RUN pip3 install --no-cache-dir --timeout 600 --retries 3 --upgrade pip && \
-    pip3 install --no-cache-dir --timeout 300 --retries 3 hf_transfer peft && \
-    pip3 install --no-cache-dir --timeout 900 --retries 3 \
-        torch==2.4.1 torchvision==0.19.1 torchaudio==2.4.1 --index-url https://download.pytorch.org/whl/cu126 && \
-    pip3 install --no-cache-dir --timeout 600 --retries 3 -r requirements.txt
+    pip3 install --no-cache-dir --timeout 300 --retries 3 hf_transfer peft
+
+# Install PyTorch with CUDA 12.6 support BEFORE other requirements
+RUN pip3 install --no-cache-dir --timeout 900 --retries 3 \
+    torch==2.4.1 torchvision==0.19.1 torchaudio==2.4.1 --index-url https://download.pytorch.org/whl/cu126
+
+# Copy and install requirements WITHOUT torch packages to avoid conflicts
+COPY requirements-runpod-no-torch.txt /app/requirements-runpod-no-torch.txt  
+RUN pip3 install --no-cache-dir --timeout 600 --retries 3 -r requirements-runpod-no-torch.txt
 
 # Install ACE-Step package
 RUN pip3 install --no-cache-dir --timeout 600 --retries 3 .

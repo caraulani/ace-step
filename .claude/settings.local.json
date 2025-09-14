@@ -3,7 +3,9 @@
     "allow": [
       "WebFetch(domain:www.runpod.io)",
       "Read(//Users/julian/Desktop/**)",
-      "WebFetch(domain:docs.runpod.io)"
+      "WebFetch(domain:docs.runpod.io)",
+      "WebFetch(domain:api.github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ],
     "deny": [],
     "ask": []
