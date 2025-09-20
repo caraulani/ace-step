@@ -4,7 +4,7 @@ gradio
 librosa==0.11.0
 loguru==0.7.3
 matplotlib==3.10.1
-numpy<2.0
+numpy==1.26.4
 pypinyin==0.53.0
 pytorch_lightning==2.5.1
 soundfile==0.13.1

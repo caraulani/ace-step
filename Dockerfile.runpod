@@ -32,12 +32,14 @@ WORKDIR /app
 # Clone the repository directly (like official Dockerfile - avoids COPY issues)
 RUN git clone https://github.com/caraulani/ace-step.git .
 
-# Install dependencies with matching CUDA versions (PyTorch first, then others)
-RUN pip3 install --no-cache-dir --timeout 600 --retries 3 --upgrade pip && \
-    pip3 install --no-cache-dir --timeout 300 --retries 3 hf_transfer peft
+# Upgrade pip first
+RUN pip3 install --no-cache-dir --timeout 600 --retries 3 --upgrade pip
 
-# Install NumPy <2.0 first to avoid compatibility issues
-RUN pip3 install --no-cache-dir --timeout 300 --retries 3 "numpy<2.0"
+# Install NumPy 1.26.4 explicitly (last 1.x version) and pin it
+RUN pip3 install --no-cache-dir --timeout 300 --retries 3 numpy==1.26.4
+
+# Install other base dependencies
+RUN pip3 install --no-cache-dir --timeout 300 --retries 3 hf_transfer peft
 
 # Install PyTorch with CUDA 12.1 support
 # Using stable versions that are known to work together
@@ -45,17 +47,22 @@ RUN pip3 install --no-cache-dir --timeout 900 --retries 3 \
     torch==2.2.0 torchvision==0.17.0 torchaudio==2.2.0 --index-url https://download.pytorch.org/whl/cu121
 
 # Copy and install requirements WITHOUT torch packages to avoid conflicts
+# Use constraint file to prevent numpy upgrade
 COPY requirements-runpod-no-torch.txt /app/requirements-runpod-no-torch.txt  
-RUN pip3 install --no-cache-dir --timeout 600 --retries 3 -r requirements-runpod-no-torch.txt
+RUN echo "numpy==1.26.4" > /app/constraints.txt && \
+    pip3 install --no-cache-dir --timeout 600 --retries 3 -c /app/constraints.txt -r requirements-runpod-no-torch.txt
 
 # Install ACE-Step package without reinstalling dependencies
 RUN pip3 install --no-cache-dir --no-deps --timeout 600 --retries 3 -e .
 
-# Install RunPod SDK
-RUN pip3 install --no-cache-dir --timeout 300 --retries 3 runpod
+# Install RunPod SDK with no-deps to prevent numpy upgrade
+RUN pip3 install --no-cache-dir --no-deps --timeout 300 --retries 3 runpod && \
+    pip3 install --no-cache-dir --timeout 300 --retries 3 aiohttp toml
 
-# Verify PyTorch and CUDA versions and ensure they match
-RUN python3 -c "import torch; import torchaudio; print(f'PyTorch: {torch.__version__}'); print(f'CUDA: {torch.version.cuda}'); print(f'TorchAudio: {torchaudio.__version__}')" && \
+# Verify versions and ensure compatibility
+RUN python3 -c "import numpy; assert numpy.__version__.startswith('1.'), f'NumPy version {numpy.__version__} is not 1.x'; print(f'NumPy: {numpy.__version__}')" && \
+    python3 -c "import torch; import torchaudio; print(f'PyTorch: {torch.__version__}'); print(f'CUDA: {torch.version.cuda}'); print(f'TorchAudio: {torchaudio.__version__}')" && \
+    python3 -c "import transformers; print(f'Transformers: {transformers.__version__}')" && \
     python3 -c "import torchaudio._extension.utils; torchaudio._extension.utils._check_cuda_version()"
 
 # Create necessary directories for RunPod
