@@ -36,6 +36,9 @@ RUN git clone https://github.com/caraulani/ace-step.git .
 RUN pip3 install --no-cache-dir --timeout 600 --retries 3 --upgrade pip && \
     pip3 install --no-cache-dir --timeout 300 --retries 3 hf_transfer peft
 
+# Install NumPy <2.0 first to avoid compatibility issues
+RUN pip3 install --no-cache-dir --timeout 300 --retries 3 "numpy<2.0"
+
 # Install PyTorch with CUDA 12.1 support
 # Using stable versions that are known to work together
 RUN pip3 install --no-cache-dir --timeout 900 --retries 3 \
