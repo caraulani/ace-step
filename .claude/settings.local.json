@@ -5,7 +5,9 @@
       "Read(//Users/julian/Desktop/**)",
       "WebFetch(domain:docs.runpod.io)",
       "WebFetch(domain:api.github.com)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebSearch",
+      "WebFetch(domain:github.com)"
     ],
     "deny": [],
     "ask": []
