@@ -18,6 +18,6 @@ accelerate==1.6.0
 cutlet
 fugashi[unidic-lite]
 click
-peft
+peft==0.7.1
 tensorboard
 tensorboardX
