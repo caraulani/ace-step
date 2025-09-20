@@ -53,9 +53,8 @@ RUN pip3 install --no-cache-dir --timeout 600 --retries 3 -r requirements-runpod
 # Install ACE-Step package without reinstalling dependencies
 RUN pip3 install --no-cache-dir --no-deps --timeout 600 --retries 3 -e .
 
-# Install RunPod SDK with no-deps to prevent numpy upgrade
-RUN pip3 install --no-cache-dir --no-deps --timeout 300 --retries 3 runpod && \
-    pip3 install --no-cache-dir --timeout 300 --retries 3 aiohttp toml
+# Install RunPod SDK and its dependencies
+RUN pip3 install --no-cache-dir --timeout 300 --retries 3 runpod paramiko
 
 # Verify versions and ensure compatibility
 RUN python3 -c "import numpy; assert numpy.__version__.startswith('1.'), f'NumPy version {numpy.__version__} is not 1.x'; print(f'NumPy: {numpy.__version__}')" && \
