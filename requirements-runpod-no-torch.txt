@@ -10,7 +10,7 @@ pytorch_lightning==2.5.1
 soundfile==0.13.1
 tqdm
 transformers==4.38.0
-py3langid==0.3.0
+py3langid==0.2.2
 hangul-romanize==0.1.0
 num2words==0.5.14
 spacy==3.8.4
